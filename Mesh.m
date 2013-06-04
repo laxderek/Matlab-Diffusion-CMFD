@@ -26,6 +26,7 @@ classdef Mesh
     z;
     g;
     gridreduce;
+    dhat;
     end
 	
     methods
@@ -36,6 +37,7 @@ classdef Mesh
             self.Leakage = zeros(x,y,z,g,6);
             self.Jsurf = zeros(x,y,z,g,6);
             self.dtilde = zeros(x,y,z,g,6);
+            self.dhat = zeros(x,y,z,g,6);
             self.X = zeros(x,y,z);
             self.Y = zeros(x,y,z);
             self.Z = zeros(x,y,z);

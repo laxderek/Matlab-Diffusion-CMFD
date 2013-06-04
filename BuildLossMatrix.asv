@@ -1,12 +1,13 @@
-function [M mesh] = BuildLossMatrix(mesh, dim, CMFD, fine)
-		
+function [M mesh] = BuildLossMatrix(mesh, dim, CMFD, fine, damping)
+	
+
     ng = mesh.g;
     nx = mesh.x;
     ny = mesh.y;
     nz = mesh.z;
     total_mesh = mesh.x * mesh.y * mesh.z * mesh.g;
 
-
+    
     %matrices to turn into sparse matrix for M
     %approximated preallocation for speed
     rowM = zeros(total_mesh,1);
@@ -60,7 +61,6 @@ function [M mesh] = BuildLossMatrix(mesh, dim, CMFD, fine)
             side = -2 * mod(surf,2) + 1; % -1=left, 1=right
             %%determine neighbor index
             %if doesn't exist (boundary), returns -1
-            %if doesn't exist (boundary), returns -1
             if (xyz == 1)
                 i2 = i + side;
                 j2 = j;
@@ -94,11 +94,9 @@ function [M mesh] = BuildLossMatrix(mesh, dim, CMFD, fine)
                    if (dim < 2)
                        j3 = j;
                    end
-                   if (surf == 1 || surf == 2)
-                   dhat = -(fine.Jsurf(i3,j3,k3,g,surf) - side *  mesh.dtilde(i,j,k,g,surf)* ...
-                     mesh.phi(i,j,k,g)) / mesh.phi(i,j,k,g);
-                   end
-                    %dhat = 0;
+                   dhatnew = -(fine.Jsurf(i3,j3,k3,g,surf) - side *  mesh.dtilde(i,j,k,g,surf)* ...
+                       mesh.phi(i,j,k,g)) / mesh.phi(i,j,k,g);
+                   dhatold = mesh.dhat(
                 end
             else %not boundary
                 %apply current
@@ -112,18 +110,12 @@ function [M mesh] = BuildLossMatrix(mesh, dim, CMFD, fine)
                         i3 = i*mesh.gridreduce(1);
                         j3 = j*mesh.gridreduce(2);
                         k3 = k*mesh.gridreduce(3);
-                        i4 = i3 + 1;
-                        j4 = j3;
-                        k4 = k3;
                     if (xyz == 1 && side == -1)
                         i3 = (i+side)*mesh.gridreduce(1) + 1;
-                        i4 = (i+side)*mesh.gridreduce(1);
                     elseif (xyz == 2 && side == -1)
                         j3 = (j+side)*mesh.gridreduce(2) + 1;
-                        j4 = (j+side)*mesh.gridreduce(2);
                     elseif (xyz == 3 && side == -1) 
                         k3 = (k+side)*mesh.gridreduce(3) + 1;
-                        k4 = (k+side)*mesh.gridreduce(3);  	
                     end
                    if (dim < 3)
                        k3 = k;
@@ -131,27 +123,12 @@ function [M mesh] = BuildLossMatrix(mesh, dim, CMFD, fine)
                    if (dim < 2)
                        j3 = j;
                    end
-                   if (surf == 1)
-                       surf2 = 2;
-                   else
-                       surf2 = 1;
-                   end
-                   current = fine.Jsurf(i3,j3,k3,g,surf);% +...
-                       %fine.Jsurf(i4,j4,k4,g,surf2);
+                   current = fine.Jsurf(i3,j3,k3,g,surf);
                    if (surf == 1 || surf == 2)                  
-                   dhat = (current 
-                   side * mesh.dtilde(i,j,k,g,surf) * ...
-                       (mesh.phi(i,j,k,g) - mesh.phi(i2,j2,k2,g))...
+                   dhat = -(current + side * mesh.dtilde(i,j,k,g,surf) * ...
+                       (-mesh.phi(i,j,k,g) + mesh.phi(i2,j2,k2,g))...
                        )/ (mesh.phi(i,j,k,g) + ...
                        mesh.phi(i2,j2,k2,g));
-                   end
-                   if (i == 2 && g == 1)
-                       %phi1 = mesh.phi(i,j,k,g)
-                       %phi2 = mesh.phi(i2,j2,k2,g)
-                       %dhat
-                       %mesh.dtilde(i,j,k,g,surf)
-                       %current
-                       %dhatfinal = 4.729087906933896e-004;                       
                    end
                 end
                 
@@ -159,7 +136,6 @@ function [M mesh] = BuildLossMatrix(mesh, dim, CMFD, fine)
                 valM(counterM) = (-mesh.dtilde(i,j,k,g,surf) - side * dhat) / mesh.dxyz(i,j,k,xyz);
                 counterM = counterM + 1;
             end 
-            %mesh.Leakage(i,j,k,g,surf) = side * mesh.dtilde(i,j,k,g,surf) + dhat;
             mesh.Leakage(i,j,k,g,surf) = mesh.dtilde(i,j,k,g,surf) - side * dhat;
         end
 

@@ -6,14 +6,16 @@ clear
 clc
 close all
 
-%Problem Solving Specifications
-dimensions = 1;
+%%%%%%%%%%%%Problem Solving Specifications%%%%%%%%%%%%%%%%
 MethodGauss = 1;
 MethodEigs = 0;
-max_iters = 10000;
+max_iters = 2000;
+convergence = 10^-9;
 gridReductionFactor = [2 1 1];
 iterationsBetweenCMFD = 5;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%%%%%%%%%%%%%% Material Defintions %%%%%%%%%%%%%%%%%%%%%%
 ng = 2;
 mat = Material();
 D = [1.5 0.3];
@@ -53,18 +55,72 @@ mat2.sigT = tot;
 mat2.sigA = sigA;
 mat2.sigS = sigS;
 mat2.nusigF = nusigF;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-x_len = 6; y_len = 1; z_len = 1;
+%%%%%%%%%%%%%%%%%%%%Geometry Definitions%%%%%%%%%%%%%%%%%%
+%Dimensions of problem. This value superceeds all other 
+%settings and will override them where necessary.
+dimensions = 1;
+%Size of each dimension in cm
+dim = [200 1 1];
+%Number of cells in each dimension
+x_len = 30; y_len = 1; z_len = 1;
+%Set boundary conditions via albedo. For reference:
+% 0 = Vacuum
+% 1 = Reflective
+BC = [0 1 1];
 mesh = Mesh(x_len,y_len,z_len,ng);
 mesh = mesh.setNumMats(1);
 mesh.mats = [mat];
 mesh = mesh.setAllMat(1,mat);
-%for i = 1:x_len
-%    mesh = mesh.setMatAtLoc(i,1,1,2,mat2);
-%end
-mesh = mesh.setEqualDist(1,200,1,1);
-mesh = mesh.setBC(0, 1, 1);%set BC, vacuum, reflective, reflective
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%                   END USER INPUT                   %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%Build Problem Geometry%%%%%%%%%%%%%%%%%%%%
+%Evenly space mesh points
+if (dimensions > 3 || dimensions < 1)
+    disp('Invalid number of dimensions');
+    break
+end
+
+% if (dimensions < 3)
+%    if (z_len ~= 1)
+%        disp('Invalid number of mesh cells in z-axis.');
+%        disp('Less than 3D. Number of cells in z-axis must be set to 1');
+%        break
+%    end
+%    dim(3) = 1;
+%    BC(3) = 1;
+% end
+% 
+% if (dimensions < 2)
+%    if (y_len ~= 1)
+%        disp('Invalid number of mesh cells in y-axis.');
+%        disp('Problem is 1D. Number of cells in y-axis must be set to 1');
+%        break
+%    end
+%    dim(2) = 1;
+%    BC(2) = 1;
+% end
+
+mesh = mesh.setEqualDist(1,dim(1),dim(2),dim(3));
+%Set boundary conditions
+mesh = mesh.setBC(BC(1), BC(2), BC(3));%set BC
+%Compute total number of mesh cells
 total_mesh = mesh.x * mesh.y * mesh.z * mesh.g;
+
+
+%%%%%%%%%%%%%%%%%%%%%%Run Solver%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 [M mesh] = BuildLossMatrix(mesh, 1, false, 0);
 F = BuildProductionMatrix(mesh, 1);
@@ -73,7 +129,6 @@ F = BuildProductionMatrix(mesh, 1);
 format long
 k = 1;
 kold = .1;
-convergence = 10^-15;
 phiold = ones(total_mesh,1);
 if MethodGauss == 1
     for iters = 1:max_iters
@@ -163,44 +218,19 @@ end
 %save flux
 mesh.phi = flux;
 
-
-
-
-%%Check the neutron balance in the cell
-
-% volume = prod(mesh.dxyz(2,1,1));
-% phi1 = mesh.phi(1,1,1,1);
-% phi2 = mesh.phi(1,2,1,1);
-% sigT = mesh.sigT(2,1,1,1);
-% sigS1 = mesh.sigS(2,1,1,1,1);
-% sigS2 = mesh.sigS(2,1,1,2,1);
-% sigF1 = mesh.nusigF(2,1,1,1,1);
-% sigF2 = mesh.nusigF(2,1,1,1,2);
-% current = mesh.Jsurf(2,1,1,1,1) + mesh.Jsurf(2,1,1,1,2)
-% loss = sigT*phi1*volume + current
-% gain = sigS1*phi1*volume + sigS2*phi2*volume + sigF1*phi1*volume + sigF2*phi2*volume
-
-
-%%Done Checking
-
-
-
 %Make coarse mesh from fine mesh
 coarse = Mesh.fineToCoarse(mesh,gridReductionFactor);
-reference = coarse.phi;
-%figure;
-%plot(coarse.phi(:,1,1,1));
 
- [M2 coarse] = BuildLossMatrix(coarse, 1, true, mesh);
- F2 = BuildProductionMatrix(coarse, 1);
+[M2 coarse] = BuildLossMatrix(coarse, 1, true, mesh, 1.0);
+F2 = BuildProductionMatrix(coarse, 1);
  
- total_mesh = coarse.x * coarse.y * coarse.z * coarse.g;
- %Initial Guess:
- format long
- k2 = 1;
- kold2 = .1;
- phiold = ones(total_mesh,1);
- if MethodGauss == 1
+total_mesh = coarse.x * coarse.y * coarse.z * coarse.g;
+%Initial Guess:
+format long
+k2 = 1;
+kold2 = .1;
+phiold = ones(total_mesh,1);
+if MethodGauss == 1
     for iters = 1:max_iters
 
         if (abs(k2-kold2) < convergence)
