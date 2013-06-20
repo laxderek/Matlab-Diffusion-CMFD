@@ -48,7 +48,11 @@ classdef Solver
 
           if (self.MethodGauss == 1)
             for i = 1:self.max_iters
-
+              
+              if (self.outerprintlevel == 1)
+                  text = strcat('Fine Mesh Iteration: ',num2str(i),'. Error in k: ',num2str(abs(self.k-kold)));
+                  disp(text);
+              end
               if (abs(self.k-kold) < self.convergence)
                   self.iters = i;
                 break;
@@ -132,6 +136,11 @@ classdef Solver
           phiold = ones(total_mesh_coarse,1);
           for iters_coarse = 1:self.max_iters_coarse
 
+              
+              if (self.innerprintlevel == 1)
+                  text = strcat('CMFD Iteration: ',num2str(iters_coarse),'. Error in k: ',num2str(abs(k2-kold2)));
+                  disp(text);
+              end
               if (abs(k2-kold2) < self.convergence_coarse)
                   break;
               end
