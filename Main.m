@@ -9,7 +9,7 @@ close all
 %%%%%%%%%%%%Problem Solving Specifications%%%%%%%%%%%%%%%%
 MethodGauss = 1;
 MethodEigs = 0;
-max_iters = 2000;
+max_iters = 800;
 convergence = 10^-9;
 gridReductionFactor = [2 1 1];
 iterationsBetweenCMFD = 5;
@@ -62,9 +62,9 @@ mat2.nusigF = nusigF;
 %settings and will override them where necessary.
 dimensions = 1;
 %Size of each dimension in cm
-dim = [200 1 1];
+dim = [10 1 1];
 %Number of cells in each dimension
-x_len = 30; y_len = 1; z_len = 1;
+x_len = 6; y_len = 1; z_len = 1;
 %Set boundary conditions via albedo. For reference:
 % 0 = Vacuum
 % 1 = Reflective
@@ -217,9 +217,8 @@ end
 
 %save flux
 mesh.phi = flux;
-
 %Make coarse mesh from fine mesh
-coarse = Mesh.fineToCoarse(mesh,gridReductionFactor);
+coarse = Mesh.fineToCoarse(mesh,phi,gridReductionFactor,dimensions);
 
 [M2 coarse] = BuildLossMatrix(coarse, 1, true, mesh, 1.0);
 F2 = BuildProductionMatrix(coarse, 1);
@@ -228,6 +227,7 @@ total_mesh = coarse.x * coarse.y * coarse.z * coarse.g;
 %Initial Guess:
 format long
 k2 = 1;
+kplot = zeros(max_iters,1);
 kold2 = .1;
 phiold = ones(total_mesh,1);
 if MethodGauss == 1
@@ -240,6 +240,7 @@ if MethodGauss == 1
         b2 = F2*phiold/kold2;
         phi2 = M2\b2;
         k2 = kold2 * sum(phi2)/sum(phiold);
+        kplot(iters) = k2;
         phi2 = phi2 / sum(sum(phi2));
         phiold = phi2;
         flux2 = reshape(phi2,ng,numel(phi2)/ng,1,1);
@@ -247,7 +248,9 @@ if MethodGauss == 1
      end
  elseif MethodEigs == 1
      k2 = eigs(M2\F2);
- end
+end
+ figure;
+ plot(5:iters-1,kplot(5:iters - 1));
  disp k;
  disp (k2);
 disp('iters');

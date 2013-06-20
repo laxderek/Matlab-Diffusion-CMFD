@@ -9,7 +9,8 @@ close all
 %%%%%%%%%%%%Problem Solving Specifications%%%%%%%%%%%%%%%%
 MethodGauss = 1;
 MethodEigs = 0;
-max_iters = 10000;
+max_iters = 2000;
+convergence = 10^-9;
 gridReductionFactor = [2 1 1];
 iterationsBetweenCMFD = 5;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -57,8 +58,17 @@ mat2.nusigF = nusigF;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%Geometry Definitions%%%%%%%%%%%%%%%%%%
-dimensions = 3;
-x_len = 6; y_len = 1; z_len = 1;
+%Dimensions of problem. This value superceeds all other 
+%settings and will override them where necessary.
+dimensions = 1;
+%Size of each dimension in cm
+dim = [200 1 1];
+%Number of cells in each dimension
+x_len = 30; y_len = 1; z_len = 1;
+%Set boundary conditions via albedo. For reference:
+% 0 = Vacuum
+% 1 = Reflective
+BC = [0 1 1];
 mesh = Mesh(x_len,y_len,z_len,ng);
 mesh = mesh.setNumMats(1);
 mesh.mats = [mat];
@@ -66,11 +76,51 @@ mesh = mesh.setAllMat(1,mat);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%                   END USER INPUT                   %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
 %%%%%%%%%%%%%%%%Build Problem Geometry%%%%%%%%%%%%%%%%%%%%
-%Evenly space 
+%Evenly space mesh points
+if (dimensions > 3 || dimensions < 1)
+    disp('Invalid number of dimensions');
+    break
+end
+
+% if (dimensions < 3)
+%    if (z_len ~= 1)
+%        disp('Invalid number of mesh cells in z-axis.');
+%        disp('Less than 3D. Number of cells in z-axis must be set to 1');
+%        break
+%    end
+%    dim(3) = 1;
+%    BC(3) = 1;
+% end
+% 
+% if (dimensions < 2)
+%    if (y_len ~= 1)
+%        disp('Invalid number of mesh cells in y-axis.');
+%        disp('Problem is 1D. Number of cells in y-axis must be set to 1');
+%        break
+%    end
+%    dim(2) = 1;
+%    BC(2) = 1;
+% end
+
 mesh = mesh.setEqualDist(1,dim(1),dim(2),dim(3));
-mesh = mesh.setBC(0, 1, 1);%set BC, vacuum, reflective, reflective
+%Set boundary conditions
+mesh = mesh.setBC(BC(1), BC(2), BC(3));%set BC
+%Compute total number of mesh cells
 total_mesh = mesh.x * mesh.y * mesh.z * mesh.g;
+
+
+%%%%%%%%%%%%%%%%%%%%%%Run Solver%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 [M mesh] = BuildLossMatrix(mesh, 1, false, 0);
 F = BuildProductionMatrix(mesh, 1);
@@ -79,7 +129,6 @@ F = BuildProductionMatrix(mesh, 1);
 format long
 k = 1;
 kold = .1;
-convergence = 10^-15;
 phiold = ones(total_mesh,1);
 if MethodGauss == 1
     for iters = 1:max_iters
