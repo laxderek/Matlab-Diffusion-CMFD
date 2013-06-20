@@ -14,9 +14,9 @@ solver.MethodEigs = 0;
 solver.max_iters = 1000;
 solver.convergence = 10^-11;
 solver.max_iters_coarse = 100;
-solver.convergence_coarse = 10^-6;
+solver.convergence_coarse = 10^-11;
 solver.gridReductionFactor = [2 1 1];
-solver.CMFD = 1;
+solver.CMFD = 0;
 solver.iterationsBetweenCMFD = 1;
 solver.outerprintlevel = 1;
 solver.innerprintlevel = 1;
@@ -65,9 +65,9 @@ mat2.nusigF = nusigF;
 %settings and will override them where necessary.
 solver.dimensions = 1;
 %Size of each dimension in cm
-solver.dim = [10 1 1];
+solver.dim = [100 1 1];
 %Number of cells in each dimension
-x_len = 6; y_len = 1; z_len = 1;
+x_len = 50; y_len = 1; z_len = 1;
 %Set boundary conditions via albedo. For reference:
 % 0 = Vacuum
 % 1 = Reflective

@@ -50,7 +50,7 @@ classdef Solver
             for i = 1:self.max_iters
               
               if (self.outerprintlevel == 1)
-                  text = strcat('Fine Mesh Iteration: ',num2str(i),'. Error in k: ',num2str(abs(self.k-kold)));
+                  text = strcat('Fine Mesh Iteration: ',num2str(i-1),'. Error in k: ',num2str(abs(self.k-kold)));
                   disp(text);
               end
               if (abs(self.k-kold) < self.convergence)
@@ -115,7 +115,6 @@ classdef Solver
             
         end
         
-        
         function self=accelerate(self)
           
           self = self.calculateCurrents();
@@ -138,7 +137,7 @@ classdef Solver
 
               
               if (self.innerprintlevel == 1)
-                  text = strcat('CMFD Iteration: ',num2str(iters_coarse),'. Error in k: ',num2str(abs(k2-kold2)));
+                  text = strcat('CMFD Iteration: ',num2str(iters_coarse-1),'. Error in k: ',num2str(abs(k2-kold2)));
                   disp(text);
               end
               if (abs(k2-kold2) < self.convergence_coarse)
