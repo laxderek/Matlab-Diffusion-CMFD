@@ -10,9 +10,9 @@ function [M mesh] = BuildLossMatrix(mesh, dim, CMFD, fine, damping)
     
     %matrices to turn into sparse matrix for M
     %approximated preallocation for speed
-    rowM = zeros(total_mesh,1);
-    colM = zeros(total_mesh,1);
-    valM = zeros(total_mesh,1);
+    rowM = zeros(total_mesh*2,1);
+    colM = zeros(total_mesh*2,1);
+    valM = zeros(total_mesh*2,1);
     counterM = 1;
     %loop over rows
     for irow=1:total_mesh  %indexed by
@@ -140,7 +140,7 @@ function [M mesh] = BuildLossMatrix(mesh, dim, CMFD, fine, damping)
                 end
                 
                 
-                valM(counterM) = (-mesh.dtilde(i,j,k,g,surf) - side * dhat) / mesh.dxyz(i,j,k,xyz);
+                valM(counterM) = (-mesh.dtilde(i,j,k,g,surf) + side * dhat) / mesh.dxyz(i,j,k,xyz);
                 counterM = counterM + 1;
             end 
             mesh.Leakage(i,j,k,g,surf) = mesh.dtilde(i,j,k,g,surf) - side * dhat;
