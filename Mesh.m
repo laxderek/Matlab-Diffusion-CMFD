@@ -154,7 +154,7 @@ classdef Mesh
     
     methods(Static)
         
-        function [coarse] = fineToCoarse(fine, scale)
+        function [coarse] = fineToCoarse(fine, phi, scale, dim)
 
             coarse = 0;
             ng = fine.g;
@@ -164,6 +164,7 @@ classdef Mesh
                 coarse = Mesh(fine.x / scale(1), fine.y / scale(2), fine.z / scale(3), fine.g);
                 coarse.gridreduce = scale;
                 coarse.albedo = fine.albedo;
+                info = [dim ng fine.x fine.y];
                 %loop over coarse mesh condensing each dimension
                 %(scalex,scaley,scalez)
                 for i = 1:coarse.x
@@ -194,15 +195,15 @@ classdef Mesh
                                         
                                         for group  = 1:fine.g
                                         
-                                            volWeightedPhi(group) = volWeightedPhi(group) + fine.phi(group,finex,finey,finez) * prod(fine.dxyz(i,j,k,:));                 
-                                            totphi(group) = totphi(group) + fine.phi(group,finex,finey,finez);
-                                            DiffP(group) = DiffP(group) + fine.D(finex,finey,finez,group) * fine.phi(group,finex,finey,finez);
-                                            sigmaTP(group) = sigmaTP(group) + fine.sigT(finex,finey,finez,group) * fine.phi(group,finex,finey,finez);
-                                            sigmaAP(group) = sigmaAP(group) + fine.sigA(finex,finey,finez,group) * fine.phi(group,finex,finey,finez);
+                                            volWeightedPhi(group) = volWeightedPhi(group) + phi(indexToMat(finex,finey,finez,group,info)) * prod(fine.dxyz(i,j,k,:));                 
+                                            totphi(group) = totphi(group) + phi(indexToMat(finex,finey,finez,group,info));
+                                            DiffP(group) = DiffP(group) + fine.D(finex,finey,finez,group) * phi(indexToMat(finex,finey,finez,group,info));
+                                            sigmaTP(group) = sigmaTP(group) + fine.sigT(finex,finey,finez,group) * phi(indexToMat(finex,finey,finez,group,info));
+                                            sigmaAP(group) = sigmaAP(group) + fine.sigA(finex,finey,finez,group) * phi(indexToMat(finex,finey,finez,group,info));
 
                                             for h = 1:fine.g
-                                                sigmaSP(group,h) = sigmaSP(group,h) + fine.sigS(finex,finey,finez,group,h) * fine.phi(group,finex,finey,finez);
-                                                nusigmaFP(group,h) = nusigmaFP(group,h) + fine.nusigF(finex,finey,finez,group,h) * fine.phi(group,finex,finey,finez);                                                
+                                                sigmaSP(group,h) = sigmaSP(group,h) + fine.sigS(finex,finey,finez,group,h) * phi(indexToMat(finex,finey,finez,group,info));
+                                                nusigmaFP(group,h) = nusigmaFP(group,h) + fine.nusigF(finex,finey,finez,group,h) * phi(indexToMat(finex,finey,finez,group,info));                                                
                                             end
                                             
                                         end

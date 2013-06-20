@@ -1,18 +1,19 @@
 classdef Mesh
 
     properties
-    meshPhi;
-    meshLeakage;
-    meshJsurf;
-	meshX;
-	meshY;
-	meshZ;
-	meshI;
-	meshJ;
-	meshK;
-	meshINDEX;
-	meshMAT;
-	meshDXYZ;
+    phi;
+    dtilde;
+    Leakage;
+    Jsurf;
+	X;
+	Y;
+	Z;
+	I;
+	J;
+	K;
+	INDEX;
+	MAT;
+	dxyz;
     D;
     sigS;
     sigA;
@@ -25,15 +26,18 @@ classdef Mesh
     z;
     g;
     gridreduce;
+    dhat;
     end
 	
     methods
         
         %constructor
         function self=Mesh(x,y,z,g) 
-            self.Phi = zeros(x,y,z,g);
+            self.phi = zeros(x,y,z,g);
+            self.Leakage = zeros(x,y,z,g,6);
             self.Jsurf = zeros(x,y,z,g,6);
-            self.Jsurf = zeros(x,y,z,g,6);
+            self.dtilde = zeros(x,y,z,g,6);
+            self.dhat = zeros(x,y,z,g,6);
             self.X = zeros(x,y,z);
             self.Y = zeros(x,y,z);
             self.Z = zeros(x,y,z);
@@ -47,7 +51,7 @@ classdef Mesh
             self.nusigF = zeros(x,y,z,g,g);
             self.INDEX = zeros(x,y,z);
             self.MAT = zeros(x,y,z);
-            self.DXYZ = zeros(x,y,z,3);
+            self.dxyz = zeros(x,y,z,3);
             self.gridreduce = zeros(3,1);
             for i = 1:x
                 for j = 1:y
@@ -107,7 +111,7 @@ classdef Mesh
             for i = 1:self.x
                 for j = 1:self.y
                     for k = 1:self.z
-                        self.DXYZ(i,j,k,1) = dx;
+                        self.dxyz(i,j,k,1) = dx;
                         self.X(i,j,k) = totx;
                     end
                 end
@@ -119,10 +123,10 @@ classdef Mesh
                 for i = 1:self.x
                     for k = 1:self.z
                         if (dim > 1) %//y
-                            self.DXYZ(i,j,k,2) = dy;
+                            self.dxyz(i,j,k,2) = dy;
                             self.Y(i,j,k) = toty;
                         else
-                            self.DXYZ(i,j,k,2) = 1;
+                            self.dxyz(i,j,k,2) = 1;
                             self.Y(i,j,k) = 1;
                         end
                     end
@@ -135,10 +139,10 @@ classdef Mesh
                 for j = 1:self.y
                     for i = 1:self.x
                         if (dim > 2) %//z
-                            self.DXYZ(i,j,k,3) = dz;
+                            self.dxyz(i,j,k,3) = dz;
                             self.Y(i,j,k) = totz;
                         else
-                            self.DXYZ(i,j,k,3) = 1;
+                            self.dxyz(i,j,k,3) = 1;
                             self.Z(i,j,k) = 1;
                         end
                     end
@@ -150,7 +154,7 @@ classdef Mesh
     
     methods(Static)
         
-        function [coarse] = fineToCoarse(fine, scale)
+        function [coarse] = fineToCoarse(fine, phi, scale)
 
             coarse = 0;
             ng = fine.g;
@@ -177,9 +181,9 @@ classdef Mesh
                             coarse.X(i,j,k) = fine.X(i,j,k)*scale(1);  
                             coarse.Y(i,j,k) = fine.Y(i,j,k)*scale(2);  
                             coarse.Z(i,j,k) = fine.Z(i,j,k)*scale(3);
-                            coarse.DXYZ(i,j,k,1) = fine.DXYZ(i,j,k,1) * scale(1);
-                            coarse.DXYZ(i,j,k,2) = fine.DXYZ(i,j,k,2) * scale(2);
-                            coarse.DXYZ(i,j,k,3) = fine.DXYZ(i,j,k,3) * scale(3);
+                            coarse.dxyz(i,j,k,1) = fine.dxyz(i,j,k,1) * scale(1);
+                            coarse.dxyz(i,j,k,2) = fine.dxyz(i,j,k,2) * scale(2);
+                            coarse.dxyz(i,j,k,3) = fine.dxyz(i,j,k,3) * scale(3);
                             for finex = (i-1) * scale(1) + 1: (i) * scale(1)
                                 for finey = j * scale(2): (k+1) * scale(2) - 1
                                     for finez = k * scale(3): (k+1) * scale(3) - 1
@@ -190,15 +194,15 @@ classdef Mesh
                                         
                                         for group  = 1:fine.g
                                         
-                                            volWeightedPhi(group) = volWeightedPhi(group) + fine.Phi(group,finex,finey,finez) * prod(fine.DXYZ(i,j,k,:));                 
-                                            totphi(group) = totphi(group) + fine.Phi(group,finex,finey,finez);
-                                            DiffP(group) = DiffP(group) + fine.D(finex,finey,finez,group) * fine.Phi(group,finex,finey,finez);
-                                            sigmaTP(group) = sigmaTP(group) + fine.sigT(finex,finey,finez,group) * fine.Phi(group,finex,finey,finez);
-                                            sigmaAP(group) = sigmaAP(group) + fine.sigA(finex,finey,finez,group) * fine.Phi(group,finex,finey,finez);
+                                            volWeightedPhi(group) = volWeightedPhi(group) + phi(finex,finey,finez,group) * prod(fine.dxyz(i,j,k,:));                 
+                                            totphi(group) = totphi(group) + phi(finex,finey,finez,group);
+                                            DiffP(group) = DiffP(group) + fine.D(finex,finey,finez,group) * phi(finex,finey,finez,group);
+                                            sigmaTP(group) = sigmaTP(group) + fine.sigT(finex,finey,finez,group) * phi(finex,finey,finez,group);
+                                            sigmaAP(group) = sigmaAP(group) + fine.sigA(finex,finey,finez,group) * phi(finex,finey,finez,group);
 
                                             for h = 1:fine.g
-                                                sigmaSP(group,h) = sigmaSP(group,h) + fine.sigS(finex,finey,finez,group,h) * fine.Phi(group,finex,finey,finez);
-                                                nusigmaFP(group,h) = nusigmaFP(group,h) + fine.nusigF(finex,finey,finez,group,h) * fine.Phi(group,finex,finey,finez);                                                
+                                                sigmaSP(group,h) = sigmaSP(group,h) + fine.sigS(finex,finey,finez,group,h) * fine.phi(finex,finey,finez,group);
+                                                nusigmaFP(group,h) = nusigmaFP(group,h) + fine.nusigF(finex,finey,finez,group,h) * fine.phi(finex,finey,finez,group);                                                
                                             end
                                             
                                         end
@@ -206,7 +210,7 @@ classdef Mesh
                                 end
                             end
                             for group  = 1:fine.g
-                                    coarse.Phi(i,j,k,group) = volWeightedPhi(group) / prod(coarse.DXYZ(i,j,k,:));
+                                    coarse.phi(i,j,k,group) = volWeightedPhi(group) / prod(coarse.dxyz(i,j,k,:));
                                     coarse.D(i,j,k,group) = DiffP(group) ./  totphi(group);
                                     coarse.sigT(i,j,k,group) = sigmaTP(group) ./ totphi(group);
                                     coarse.sigA(i,j,k,group) = sigmaAP(group) ./ totphi(group);
