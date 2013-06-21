@@ -213,8 +213,7 @@ classdef Solver
                             g2 = g;
                             
             self.phi(indexToMat(i,j,k,g,info)) = self.phi(indexToMat(i,j,k,g,info)) *...
-                phi2(indexToMat(i2,j2,k2,g2,info2)) / coarse_flux_old(indexToMat(i2,j2,k2,g2,info2));
-                %coarse.phi(i2,j2,k2,g2) / coarse_flux_old(i2,j2,k2,g2);           
+                phi2(indexToMat(i2,j2,k2,g2,info2)) / coarse_flux_old(indexToMat(i2,j2,k2,g2,info2));          
                         end
                     end
                 end

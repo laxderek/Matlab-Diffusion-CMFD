@@ -27,6 +27,7 @@ classdef Solver
     outerprintlevel;
     innerprintlevel;
     verify;
+    figures;
     end
     
     methods
@@ -182,7 +183,7 @@ classdef Solver
                   disp(text);
               end
               if (abs(k2-kold2) < self.convergence_coarse)
-                  text = strcat('CMFD Converged in : ',num2str(iters_coarse-1),' Iterations. k: ',num2str(abs(k2-kold2),9),'. k = ',num2str(k2,9));
+                  text = strcat('CMFD Converged in  ',num2str(iters_coarse-1),' Iterations. k:  ',num2str(k2),12);
                   disp(text);
                   break;
               end
@@ -197,6 +198,7 @@ classdef Solver
           %CMFD completed. Remap back onto fine mesh
           %self.phi = reshape(self.phi,self.mesh.x,self.mesh.y,self.mesh.z,self.ng);
           %phi2 = reshape(phi2,coarse.x,coarse.y,coarse.z,coarse.g);
+          coarse_flux_old = coarse_flux_old ./ sum(self.coarseF * coarse_flux_old);
           info = [self.dimensions self.mesh.g self.mesh.x self.mesh.y self.mesh.z];
           info2 = [self.dimensions coarse.g coarse.x coarse.y coarse.z];
             for i = 1:self.mesh.x
@@ -211,8 +213,7 @@ classdef Solver
                             g2 = g;
                             
             self.phi(indexToMat(i,j,k,g,info)) = self.phi(indexToMat(i,j,k,g,info)) *...
-                phi2(indexToMat(i2,j2,k2,g2,info2)) / coarse_flux_old(indexToMat(i2,j2,k2,g2,info2));
-                %coarse.phi(i2,j2,k2,g2) / coarse_flux_old(i2,j2,k2,g2);           
+                phi2(indexToMat(i2,j2,k2,g2,info2)) / coarse_flux_old(indexToMat(i2,j2,k2,g2,info2));          
                         end
                     end
                 end
@@ -280,7 +281,7 @@ classdef Solver
             disp('iters');
             disp(self.iters);
 
-            if (self.MethodGauss && self.dimensions == 1)
+            if (self.figures == 1 && self.MethodGauss && self.dimensions == 1)
                 plotflux = reshape(self.phi,self.ng,numel(self.phi)/self.ng);
                 plot(self.mesh.X,plotflux(1,:));
                 hold on

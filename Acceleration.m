@@ -15,12 +15,12 @@ solver.max_iters = 10000;
 solver.convergence = 10^-14;
 solver.max_iters_coarse = 1000;
 solver.convergence_coarse = 10^-14;
-solver.gridReductionFactor = [2 1 1];
+solver.gridReductionFactor = [1 1 1];
 solver.CMFD = 1;
-solver.iterationsBetweenCMFD = 21;
+solver.iterationsBetweenCMFD = 3;
 solver.outerprintlevel = 1;
-solver.innerprintlevel = 1;
-solver.verify = 1;
+solver.innerprintlevel = 0;
+solver.verify = 0;
 solver.figures = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

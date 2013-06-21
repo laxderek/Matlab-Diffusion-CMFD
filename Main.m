@@ -222,15 +222,15 @@ solver = Solver();
 solver.MethodGauss = 1;
 solver.MethodEigs = 0;
 solver.max_iters = 10000;
-solver.convergence = 10^-14;
+solver.convergence = 10^-10;
 solver.max_iters_coarse = 1000;
-solver.convergence_coarse = 10^-14;
+solver.convergence_coarse = 10^-12;
 solver.gridReductionFactor = [2 1 1];
 solver.CMFD = 0;
 solver.iterationsBetweenCMFD = 1000;
 solver.outerprintlevel = 1;
 solver.innerprintlevel = 1;
-solver.verify = 1;
+solver.verify = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%% Material Defintions %%%%%%%%%%%%%%%%%%%%%%
@@ -289,7 +289,7 @@ mesh.mats = [mat];
 mesh = mesh.setAllMat(1,mat);
 %mesh.setMatAtLoc(self,1,1,1,mat2,material) 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+solver.figures = 0;
 solver.mesh = mesh;
 
 solver = solver.solve();

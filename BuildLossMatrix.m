@@ -89,6 +89,16 @@ function [M mesh] = BuildLossMatrix(mesh, dim, CMFD, fine, damping)
                    end
                    j3 = j*mesh.gridreduce(1);                   
                    k3 = k*mesh.gridreduce(1);
+                   if (i3 == 0)
+                       i3 = 1;
+                   end
+                   if (j3 == 0)
+                       j3 = 1;
+                   end
+                   if (k3 == 0)
+                       k3 = 1;
+                   end
+                   
                    if (dim < 3)
                        k3 = k;
                    end
