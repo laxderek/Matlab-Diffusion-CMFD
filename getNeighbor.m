@@ -11,4 +11,5 @@ function [index] = getNeighbor(irow,ng,nx,ny,total_mesh,xyz,side)
     if index < 1 || index > total_mesh
         index = -1;
     end
+    if irow
 end

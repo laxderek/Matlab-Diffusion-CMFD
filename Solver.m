@@ -26,6 +26,8 @@ classdef Solver
     dimensions;
     outerprintlevel;
     innerprintlevel;
+    verify;
+    figures;
     end
     
     methods
@@ -50,7 +52,7 @@ classdef Solver
             for i = 1:self.max_iters
               
               if (self.outerprintlevel == 1)
-                  text = strcat('Fine Mesh Iteration: ',num2str(i-1),'. Error in k: ',num2str(abs(self.k-kold)));
+                  text = strcat('Fine Mesh Iteration: ',num2str(i-1),'. Error in k: ',num2str(abs(self.k-kold),9),'. k = ',num2str(self.k,9));
                   disp(text);
               end
               if (abs(self.k-kold) < self.convergence)
@@ -61,7 +63,7 @@ classdef Solver
               b = self.F*phiold/kold;
               self.phi = self.M\b;
               self.k = kold * sum(self.phi)/sum(phiold);
-              self.phi = self.phi / sum(sum(self.phi));
+              self.phi = self.phi / sum(self.F * self.phi);
               if (self.CMFD == 1 && mod(i,self.iterationsBetweenCMFD) == 0) 
                  self.flux = reshape(self.phi,self.mesh.x,self.mesh.y,self.mesh.z,self.ng);
                  self = self.accelerate(); 
@@ -115,6 +117,33 @@ classdef Solver
             
         end
         
+        function self=checkBalance(self,coarseMesh) 
+           
+            for i = 1:coarseMesh.x
+                for j = 1:coarseMesh.y
+                    for k = 1:coarseMesh.z
+                        for g = 1:coarseMesh.g 
+                            
+                            %find fine mesh indices
+
+                            i3 = 1 + (i-1)*self.gridReductionFactor(1);
+                            i4 = (i)*self.gridReductionFactor(1);
+                            j3 = j*self.gridReductionFactor(2);                   
+                            k3 = k*self.gridReductionFactor(3);
+                            
+                            leakage = self.mesh.Jsurf(i4,j3,k3,g,2) - self.mesh.Jsurf(i3,j3,k3,g,1);
+                            absorption = coarseMesh.sigA(g) * coarseMesh.phi(i,j,k,g) * coarseMesh.dxyz(1);
+                            fission = coarseMesh.nusigF(1,g) * coarseMesh.phi(i,j,k,g) * coarseMesh.dxyz(1) / self.k;
+                            
+                            check = leakage + absorption - fission
+                            
+                        end
+                    end
+                end
+            end
+            
+        end
+        
         function self=accelerate(self)
           
           self = self.calculateCurrents();
@@ -122,40 +151,56 @@ classdef Solver
           %Make coarse mesh from fine mesh
           coarse = Mesh.fineToCoarse(self.mesh,self.phi,self.gridReductionFactor, self.dimensions);
           
-          coarse_flux_old = coarse.phi;
-          
           [self.coarseM coarse] = BuildLossMatrix(coarse, 1, true, self.mesh, 1.0);
           self.coarseF = BuildProductionMatrix(coarse, 1);
 
+          if (self.verify == 1)
+              self.checkBalance(coarse);
+          end
+          
           total_mesh_coarse = coarse.x * coarse.y * coarse.z * coarse.g;
+          coarse_flux_old = zeros(total_mesh_coarse,1);
+          for g = 1:coarse.g
+              for i = 1:coarse.x
+                  
+                  coarse_flux_old((g-1) + (i-1)*coarse.g + 1) = coarse.phi(i,1,1,g);
+              
+              end              
+          end
+          %coarse_flux_old = reshape(coarse.phi,total_mesh_coarse,1);
+          %coarse_flux_old = coarse_flux_old / sum(self.coarseF * coarse_flux_old);
           %Initial Guess:
           format long
           k2 = 1;
           kold2 = .1;
           phiold = ones(total_mesh_coarse,1);
+          format long
           for iters_coarse = 1:self.max_iters_coarse
 
               
               if (self.innerprintlevel == 1)
-                  text = strcat('CMFD Iteration: ',num2str(iters_coarse-1),'. Error in k: ',num2str(abs(k2-kold2)));
+                  text = strcat('CMFD Iteration: ',num2str(iters_coarse-1),'. Error in k: ',num2str(abs(k2-kold2),9),'. k = ',num2str(k2,9));
                   disp(text);
               end
               if (abs(k2-kold2) < self.convergence_coarse)
+                  text = strcat('CMFD Converged in  ',num2str(iters_coarse-1),' Iterations. k:  ',num2str(k2),12);
+                  disp(text);
                   break;
               end
               kold2 = k2;
               b2 = self.coarseF*phiold/kold2;
               phi2 = self.coarseM\b2;
               k2 = kold2 * sum(phi2)/sum(phiold);
-              phi2 = phi2 / sum(sum(phi2));
+              phi2 = phi2 / sum(self.coarseF * phi2);
               phiold = phi2;
           end
           
           %CMFD completed. Remap back onto fine mesh
           %self.phi = reshape(self.phi,self.mesh.x,self.mesh.y,self.mesh.z,self.ng);
           %phi2 = reshape(phi2,coarse.x,coarse.y,coarse.z,coarse.g);
-          info = [self.dimensions self.mesh.g self.mesh.x self.mesh.y];
-          info2 = [self.dimensions coarse.g coarse.x coarse.y];
+          coarse_flux_old = coarse_flux_old ./ sum(self.coarseF * coarse_flux_old);
+          info = [self.dimensions self.mesh.g self.mesh.x self.mesh.y self.mesh.z];
+          info2 = [self.dimensions coarse.g coarse.x coarse.y coarse.z];
             for i = 1:self.mesh.x
                 for j = 1:self.mesh.y
                     for k = 1:self.mesh.z
@@ -168,19 +213,19 @@ classdef Solver
                             g2 = g;
                             
             self.phi(indexToMat(i,j,k,g,info)) = self.phi(indexToMat(i,j,k,g,info)) *...
-                phi2(indexToMat(i2,j2,k2,g2,info2)) / coarse_flux_old(i2,j2,k2,g2);
+                phi2(indexToMat(i2,j2,k2,g2,info2)) / coarse_flux_old(indexToMat(i2,j2,k2,g2,info2));
                 %coarse.phi(i2,j2,k2,g2) / coarse_flux_old(i2,j2,k2,g2);           
                         end
                     end
                 end
             end    
-          self.phi = reshape(self.phi,self.total_mesh,1);
+          %self.phi = reshape(self.phi,self.total_mesh,1);
           
         end
         
         function self = calculateCurrents(self) 
             
-            INF = [self.dimensions self.mesh.g self.mesh.x self.mesh.y];
+            INF = [self.dimensions self.mesh.g self.mesh.x self.mesh.y self.mesh.z];
             %calculate all surface currents
             for i1 = 1:self.mesh.x
                 for j1 = 1:self.mesh.y
@@ -237,7 +282,7 @@ classdef Solver
             disp('iters');
             disp(self.iters);
 
-            if (self.MethodGauss && self.dimensions == 1)
+            if (self.figures == 1 && self.MethodGauss && self.dimensions == 1)
                 plotflux = reshape(self.phi,self.ng,numel(self.phi)/self.ng);
                 plot(self.mesh.X,plotflux(1,:));
                 hold on

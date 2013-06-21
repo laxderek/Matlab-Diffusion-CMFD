@@ -164,7 +164,7 @@ classdef Mesh
                 coarse = Mesh(fine.x / scale(1), fine.y / scale(2), fine.z / scale(3), fine.g);
                 coarse.gridreduce = scale;
                 coarse.albedo = fine.albedo;
-                info = [dim ng fine.x fine.y];
+                info = [dim ng fine.x fine.y fine.z];
                 %loop over coarse mesh condensing each dimension
                 %(scalex,scaley,scalez)
                 for i = 1:coarse.x

@@ -38,6 +38,9 @@ function [ F ] = BuildProductionMatrix(mesh,dim)
             counterF = counterF + 1;     
         end
     end
+    rowF(counterF) = total_mesh;
+    colF(counterF) = total_mesh;
+    valF(counterF) = 0;
     F = sparse(rowF,colF,valF);
 end
         

@@ -74,7 +74,8 @@ function [M mesh] = BuildLossMatrix(mesh, dim, CMFD, fine, damping)
                 j2 = j;
                 k2 = k + side;		        	
             end
-            neigh = getNeighbor(irow,ng,nx,ny,total_mesh, xyz, side);
+            info = [dim ng nx ny nz];
+            neigh = indexToMat(i2,j2,k2,g,info);
             if (neigh == -1) %boundary
                 %apply boundary condition            
                 mesh.dtilde(i,j,k,g,surf)= 2 * diffusion * (1 - mesh.albedo(xyz)) / ...
@@ -94,7 +95,7 @@ function [M mesh] = BuildLossMatrix(mesh, dim, CMFD, fine, damping)
                    if (dim < 2)
                        j3 = j;
                    end
-                   dhatnew = -(fine.Jsurf(i3,j3,k3,g,surf) - side *  mesh.dtilde(i,j,k,g,surf)* ...
+                   dhatnew = -(fine.Jsurf(i3,j3,k3,g,surf) - side *  mesh.dtilde(i,j,k,g,surf) * ...
                        mesh.phi(i,j,k,g)) / mesh.phi(i,j,k,g);
                    dhatold = mesh.dhat(i,j,k,g,surf);
                    

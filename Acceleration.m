@@ -11,15 +11,17 @@ solver = Solver();
 %%%%%%%%%%%%Problem Solving Specifications%%%%%%%%%%%%%%%%
 solver.MethodGauss = 1;
 solver.MethodEigs = 0;
-solver.max_iters = 1000;
-solver.convergence = 10^-11;
-solver.max_iters_coarse = 100;
-solver.convergence_coarse = 10^-11;
+solver.max_iters = 10000;
+solver.convergence = 10^-14;
+solver.max_iters_coarse = 1000;
+solver.convergence_coarse = 10^-14;
 solver.gridReductionFactor = [2 1 1];
-solver.CMFD = 0;
-solver.iterationsBetweenCMFD = 1;
+solver.CMFD = 1;
+solver.iterationsBetweenCMFD = 21;
 solver.outerprintlevel = 1;
 solver.innerprintlevel = 1;
+solver.verify = 1;
+solver.figures = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%% Material Defintions %%%%%%%%%%%%%%%%%%%%%%
@@ -65,9 +67,9 @@ mat2.nusigF = nusigF;
 %settings and will override them where necessary.
 solver.dimensions = 1;
 %Size of each dimension in cm
-solver.dim = [100 1 1];
+solver.dim = [10 1 1];
 %Number of cells in each dimension
-x_len = 50; y_len = 1; z_len = 1;
+x_len = 6; y_len = 1; z_len = 1;
 %Set boundary conditions via albedo. For reference:
 % 0 = Vacuum
 % 1 = Reflective
@@ -76,10 +78,11 @@ mesh = Mesh(x_len,y_len,z_len,solver.ng);
 mesh = mesh.setNumMats(1);
 mesh.mats = [mat];
 mesh = mesh.setAllMat(1,mat);
+%mesh.setMatAtLoc(self,1,1,1,mat2,material) 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 solver.mesh = mesh;
-solver.solve();
+solver = solver.solve();
  
 %close all
  
