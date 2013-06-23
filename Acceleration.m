@@ -16,9 +16,9 @@ solver.convergence = 10^-14;
 solver.max_iters_coarse = 1000;
 solver.convergence_coarse = 10^-14;
 solver.gridReductionFactor = [1 1 1];
-solver.CMFD = 1;
-solver.iterationsBetweenCMFD = 3;
-solver.outerprintlevel = 1;
+solver.CMFD = 0;
+solver.iterationsBetweenCMFD = 1;
+solver.outerprintlevel = 0;
 solver.innerprintlevel = 0;
 solver.verify = 0;
 solver.figures = 0;
@@ -29,13 +29,18 @@ solver.ng = 2;
 
 %%% First Material
 mat = Material();
+%D = [1.5];
 D = [1.5 0.3];
+%sigA = [0.15];
 sigA = [0.05 .5];
+%nusigF = [0.15];
 nusigF = [[0.02 0.0]
           [0.48 0.0]];
+%sigS = [0.05];
 sigS = [[0.05 0.1]
         [0.0 0.5]]; 
 mat.D = D;
+%tot = [.2];
 tot = [.2 1];
 mat.nusigF = nusigF;
 mat.sigT = tot;
@@ -83,6 +88,7 @@ mesh = mesh.setAllMat(1,mat);
 
 solver.mesh = mesh;
 solver = solver.solve();
- 
+%solver = solver.calculateCurrents();
+%solver.checkBalance();
 %close all
  

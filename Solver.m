@@ -119,25 +119,48 @@ classdef Solver
         
         function self=checkBalance(self,coarseMesh) 
            
-            for i = 1:coarseMesh.x
-                for j = 1:coarseMesh.y
-                    for k = 1:coarseMesh.z
-                        for g = 1:coarseMesh.g 
+%             for i = 1:coarseMesh.x
+%                 for j = 1:coarseMesh.y
+%                     for k = 1:coarseMesh.z
+%                         for g = 1:coarseMesh.g 
+%                             
+%                             %find fine mesh indices
+% 
+%                             i3 = 1 + (i-1)*self.gridReductionFactor(1);
+%                             i4 = (i)*self.gridReductionFactor(1);
+%                             j3 = j*self.gridReductionFactor(2);                   
+%                             k3 = k*self.gridReductionFactor(3);
+%                             
+%                             leakage = self.mesh.Jsurf(i4,j3,k3,g,2) - self.mesh.Jsurf(i3,j3,k3,g,1);
+%                             absorption = coarseMesh.sigA(g) * coarseMesh.phi(i,j,k,g) * coarseMesh.dxyz(1);
+%                             fission = coarseMesh.nusigF(1,g) * coarseMesh.phi(i,j,k,g) * coarseMesh.dxyz(1) / self.k;
+%                             
+%                             check = leakage + absorption - fission;
+%                             text = strcat('Balance in cell',num2str(i)
+%                             
+%                         end
+%                     end
+%                 end
+%             end
+          info = [self.dimensions self.mesh.g self.mesh.x self.mesh.y self.mesh.z];
+          for i = 1:self.mesh.x
+                for j = 1:self.mesh.y
+                    for k = 1:self.mesh.z
+                        leakage = 0;
+                        fission = 0;
+                        absorption = 0;
+                        for g = 1:self.mesh.g 
                             
-                            %find fine mesh indices
-
-                            i3 = 1 + (i-1)*self.gridReductionFactor(1);
-                            i4 = (i)*self.gridReductionFactor(1);
-                            j3 = j*self.gridReductionFactor(2);                   
-                            k3 = k*self.gridReductionFactor(3);
+                            leakage = leakage + (self.mesh.Jsurf(i,j,k,g,2) - self.mesh.Jsurf(i,j,k,g,1));% / self.mesh.dxyz(1);
+                            absorption = absorption + self.mesh.sigA(g) * self.phi(indexToMat(i,j,k,g,info)) * self.mesh.dxyz(1);
+                            fission = fission + self.mesh.nusigF(1,g) * self.phi(indexToMat(i,j,k,g,info)) * self.mesh.dxyz(1) / self.k;
                             
-                            leakage = self.mesh.Jsurf(i4,j3,k3,g,2) - self.mesh.Jsurf(i3,j3,k3,g,1);
-                            absorption = coarseMesh.sigA(g) * coarseMesh.phi(i,j,k,g) * coarseMesh.dxyz(1);
-                            fission = coarseMesh.nusigF(1,g) * coarseMesh.phi(i,j,k,g) * coarseMesh.dxyz(1) / self.k;
-                            
-                            check = leakage + absorption - fission
                             
                         end
+                        check = leakage + absorption - fission;
+                        text = strcat('Balance in cell: ',num2str(i));
+                        disp(text);
+                        disp(check);
                     end
                 end
             end
