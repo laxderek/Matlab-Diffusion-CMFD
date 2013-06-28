@@ -105,7 +105,7 @@ function [M mesh] = BuildLossMatrix(mesh, dim, CMFD, fine, damping)
                    if (dim < 2)
                        j3 = j;
                    end
-                   dhatnew = -(fine.Jsurf(i3,j3,k3,g,surf) - side * mesh.dtilde(i,j,k,g,surf) * ...
+                   dhatnew = (fine.Jsurf(i3,j3,k3,g,surf) - side * mesh.dtilde(i,j,k,g,surf) * ...
                        mesh.phi(indexToMat(i,j,k,g,info))) / mesh.phi(indexToMat(i,j,k,g,info));
                    dhatold = mesh.dhat(i,j,k,g,surf);
                    
@@ -139,7 +139,7 @@ function [M mesh] = BuildLossMatrix(mesh, dim, CMFD, fine, damping)
                    end
                    current = fine.Jsurf(i3,j3,k3,g,surf);
                    if (surf == 1 || surf == 2)                  
-                   dhatnew = -(current + side * mesh.dtilde(i,j,k,g,surf) * ...
+                   dhatnew = (current + side * mesh.dtilde(i,j,k,g,surf) * ...
                        (-mesh.phi(indexToMat(i,j,k,g,info)) + mesh.phi(indexToMat(i2,j2,k2,g,info)))...
                        )/ (mesh.phi(indexToMat(i,j,k,g,info)) + ...
                        mesh.phi(indexToMat(i2,j2,k2,g,info)));
@@ -154,12 +154,12 @@ function [M mesh] = BuildLossMatrix(mesh, dim, CMFD, fine, damping)
                 valM(counterM) = (-mesh.dtilde(i,j,k,g,surf) + side * dhat) / mesh.dxyz(i,j,k,xyz);
                 counterM = counterM + 1;
             end 
-            mesh.Leakage(i,j,k,g,surf) = mesh.dtilde(i,j,k,g,surf) - side * dhat;
+            mesh.Leakage(i,j,k,g,surf) = mesh.dtilde(i,j,k,g,surf) * side + dhat;
         end
 
-        jtot = (mesh.Leakage(i,j,k,g,2) + mesh.Leakage(i,j,k,g,1)) / mesh.dxyz(i,j,k,1) + ...
-                  (mesh.Leakage(i,j,k,g,4) + mesh.Leakage(i,j,k,g,3)) / mesh.dxyz(i,j,k,2) + ...
-                  (mesh.Leakage(i,j,k,g,6) + mesh.Leakage(i,j,k,g,5)) / mesh.dxyz(i,j,k,3);
+        jtot = (mesh.Leakage(i,j,k,g,2) - mesh.Leakage(i,j,k,g,1)) / mesh.dxyz(i,j,k,1) + ...
+                  (mesh.Leakage(i,j,k,g,4) - mesh.Leakage(i,j,k,g,3)) / mesh.dxyz(i,j,k,2) + ...
+                  (mesh.Leakage(i,j,k,g,6) - mesh.Leakage(i,j,k,g,5)) / mesh.dxyz(i,j,k,3);
         %sum(mesh.Leakage(i,j,k,g,1:6));
 
         colM(counterM) = irow;
