@@ -31,10 +31,11 @@ function [ F ] = BuildProductionMatrix(mesh,dim)
         for h = 1:ng
             
             neigh = (h + ng*(i-1) + ng*nx*(j-1) + ng*nx*ny*(k-1));%neighbor matrix index
-            nuSigf = mesh.nusigF(i,j,k,g,h);%*volume;
+            nuSigf = mesh.nusigF(i,j,k,g);
+            chi = mesh.chi(i,j,k,h);
             colF(counterF) = irow;
             rowF(counterF) = neigh;
-            valF(counterF) = nuSigf;
+            valF(counterF) = chi*nuSigf;
             counterF = counterF + 1;     
         end
     end

@@ -6,6 +6,7 @@ classdef Material
     sigA;
     nusigF;
     sigS;
+    chi;
     end
     
     methods

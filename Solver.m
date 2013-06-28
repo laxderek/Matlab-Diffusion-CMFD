@@ -27,18 +27,82 @@ classdef Solver
     outerprintlevel;
     innerprintlevel;
     verify;
+    verifyCoarse;
     figures;
+    fixedSource;
+    source;
     end
     
     methods
         function self=Solver() 
-            
+          self.fixedSource = 0;
+          self.figures = 0;
+          self.verify = 0;
+          self.verifyCoarse = 0;
+          self.innerprintlevel = 0;
+          self.outerprintlevel = 1;
+          self.iterationsBetweenCMFD = 1;
+          self.CMFD = 0;
         end
         function self=solve(self)
           
+          if (self.fixedSource == 1)
+            self = self.solveFixed();
+          else
+            self = self.solveEig();
+          end
             
+        end
+        
+        function self=solveFixed(self)
+          
           self = self.checkParams();
           
+          [self.M self.mesh] = BuildLossMatrix(self.mesh, 1, false, 0);
+          sourceVec = self.source*ones(self.total_mesh,1);
+          %Initial Guess:
+          format long
+          self.k = 1;
+          kold = .1;
+          phiold = ones(self.total_mesh,1);
+
+          if (self.MethodGauss == 1)
+            for i = 1:self.max_iters
+              
+              if (self.outerprintlevel == 1)
+                  text = strcat('Fine Mesh Iteration: ',num2str(i-1),'. Error in k: ',num2str(abs(self.k-kold),9),'. k = ',num2str(self.k,9));
+                  disp(text);
+              end
+              if (abs(self.k-kold) < self.convergence)
+                  self.mesh.phi = self.phi;
+                  self.iters = i;
+                break;
+              end
+              kold = self.k;
+              b = self.F*phiold/kold;
+              self.phi = self.M\b;
+              self.k = kold * sum(self.phi)/sum(phiold);
+              self.phi = self.phi / sum(self.F * self.phi);
+              if (self.CMFD == 1 && mod(i,self.iterationsBetweenCMFD) == 0) 
+                 self.mesh.phi = self.phi;
+                 self = self.accelerate(); 
+              end
+              phiold = self.phi;
+            end  
+          elseif self.MethodEigs == 1
+            self.k = eigs(self.M\self.F);
+          end
+          if (self.verify == 1)
+              self = self.calculateCurrents();
+              self.checkBalance();
+          end
+          
+          self.print();
+          
+        end
+        
+        function self=solveEig(self) 
+            self = self.checkParams();
           
           [self.M self.mesh] = BuildLossMatrix(self.mesh, 1, false, 0);
           self.F = BuildProductionMatrix(self.mesh, 1);
@@ -56,6 +120,7 @@ classdef Solver
                   disp(text);
               end
               if (abs(self.k-kold) < self.convergence)
+                  self.mesh.phi = self.phi;
                   self.iters = i;
                 break;
               end
@@ -65,14 +130,17 @@ classdef Solver
               self.k = kold * sum(self.phi)/sum(phiold);
               self.phi = self.phi / sum(self.F * self.phi);
               if (self.CMFD == 1 && mod(i,self.iterationsBetweenCMFD) == 0) 
-                 self.flux = reshape(self.phi,self.mesh.x,self.mesh.y,self.mesh.z,self.ng);
+                 self.mesh.phi = self.phi;
                  self = self.accelerate(); 
               end
               phiold = self.phi;
-            end
-            
+            end  
           elseif self.MethodEigs == 1
             self.k = eigs(self.M\self.F);
+          end
+          if (self.verify == 1)
+              self = self.calculateCurrents();
+              self.checkBalance();
           end
           
           self.print();
@@ -117,53 +185,68 @@ classdef Solver
             
         end
         
-        function self=checkBalance(self,coarseMesh) 
+        function self=checkCoarseBalance(self,coarseMesh) 
+        %Only works for two group no upscatter
+          info = [self.dimensions coarseMesh.g coarseMesh.x coarseMesh.y coarseMesh.z];
+          for i = 1:coarseMesh.x
+                for j = 1:coarseMesh.y
+                    for k = 1:coarseMesh.z
+                        for g = 1:coarseMesh.g 
+                            
+                            leakage = (coarseMesh.Jsurf(i,j,k,g,2) - coarseMesh.Jsurf(i,j,k,g,1)) / coarseMesh.dxyz(1);
+                            absorption = coarseMesh.sigA(i,j,k,g) * coarseMesh.phi(indexToMat(i,j,k,g,info));
+                            fission = 0;
+                            for h = 1:self.mesh.g
+                                fission = fission + coarseMesh.chi(i,j,k,g) * coarseMesh.nusigF(i,j,k,h) * coarseMesh.phi(indexToMat(i,j,k,h,info)) / self.k;
+                            end
+                            
+                            if (g == 1)
+                                scattering = -coarseMesh.sigS(i,j,k,1,2) * coarseMesh.phi(indexToMat(i,j,k,1,info));
+                            elseif (g == 2)
+                                scattering = coarseMesh.sigS(i,j,k,1,2) * coarseMesh.phi(indexToMat(i,j,k,1,info));
+                            end
+                            
+                            check = leakage + absorption - scattering - fission;
+                            text = strcat('Coarse balance in cell: ',num2str(i), '/group(',num2str(g),')');
+                            disp(text);
+                            disp(check);
+                        end
+                    end
+                end
+          end
+        end
+        function self=checkBalance(self) 
            
-%             for i = 1:coarseMesh.x
-%                 for j = 1:coarseMesh.y
-%                     for k = 1:coarseMesh.z
-%                         for g = 1:coarseMesh.g 
-%                             
-%                             %find fine mesh indices
-% 
-%                             i3 = 1 + (i-1)*self.gridReductionFactor(1);
-%                             i4 = (i)*self.gridReductionFactor(1);
-%                             j3 = j*self.gridReductionFactor(2);                   
-%                             k3 = k*self.gridReductionFactor(3);
-%                             
-%                             leakage = self.mesh.Jsurf(i4,j3,k3,g,2) - self.mesh.Jsurf(i3,j3,k3,g,1);
-%                             absorption = coarseMesh.sigA(g) * coarseMesh.phi(i,j,k,g) * coarseMesh.dxyz(1);
-%                             fission = coarseMesh.nusigF(1,g) * coarseMesh.phi(i,j,k,g) * coarseMesh.dxyz(1) / self.k;
-%                             
-%                             check = leakage + absorption - fission;
-%                             text = strcat('Balance in cell',num2str(i)
-%                             
-%                         end
-%                     end
-%                 end
-%             end
+%%%%%%%%%%%%
+%Only works for two group no upscatter
           info = [self.dimensions self.mesh.g self.mesh.x self.mesh.y self.mesh.z];
           for i = 1:self.mesh.x
                 for j = 1:self.mesh.y
                     for k = 1:self.mesh.z
-                        leakage = 0;
-                        fission = 0;
-                        absorption = 0;
                         for g = 1:self.mesh.g 
                             
-                            leakage = leakage + (self.mesh.Jsurf(i,j,k,g,2) - self.mesh.Jsurf(i,j,k,g,1));% / self.mesh.dxyz(1);
-                            absorption = absorption + self.mesh.sigA(g) * self.phi(indexToMat(i,j,k,g,info)) * self.mesh.dxyz(1);
-                            fission = fission + self.mesh.nusigF(1,g) * self.phi(indexToMat(i,j,k,g,info)) * self.mesh.dxyz(1) / self.k;
+                            leakage = (self.mesh.Jsurf(i,j,k,g,2) - self.mesh.Jsurf(i,j,k,g,1)) / self.mesh.dxyz(1);
+                            absorption = self.mesh.sigA(i,j,k,g) * self.phi(indexToMat(i,j,k,g,info));
+                            fission = 0;
+                            for h = 1:self.mesh.g
+                                fission = fission + self.mesh.chi(i,j,k,g) * self.mesh.nusigF(i,j,k,h) * self.phi(indexToMat(i,j,k,h,info)) / self.k;
+                            end
                             
+                            if (g == 1)
+                                scattering = -self.mesh.sigS(i,j,k,1,2) * self.phi(indexToMat(i,j,k,1,info));
+                            elseif (g == 2)
+                                scattering = self.mesh.sigS(i,j,k,1,2) * self.phi(indexToMat(i,j,k,1,info));
+                            end
                             
+                            check = leakage + absorption - scattering - fission;
+                            
+                            text = strcat('Balance in cell: ',num2str(i), '/group(',num2str(g),')');
+                            disp(text);
+                            disp(check);
                         end
-                        check = leakage + absorption - fission;
-                        text = strcat('Balance in cell: ',num2str(i));
-                        disp(text);
-                        disp(check);
                     end
                 end
-            end
+          end
             
         end
         
@@ -173,25 +256,11 @@ classdef Solver
           
           %Make coarse mesh from fine mesh
           coarse = Mesh.fineToCoarse(self.mesh,self.phi,self.gridReductionFactor, self.dimensions);
-          
           [self.coarseM coarse] = BuildLossMatrix(coarse, 1, true, self.mesh, 1.0);
           self.coarseF = BuildProductionMatrix(coarse, 1);
-
-          if (self.verify == 1)
-              self.checkBalance(coarse);
-          end
           
           total_mesh_coarse = coarse.x * coarse.y * coarse.z * coarse.g;
-          coarse_flux_old = zeros(total_mesh_coarse,1);
-          for g = 1:coarse.g
-              for i = 1:coarse.x
-                  
-                  coarse_flux_old((g-1) + (i-1)*coarse.g + 1) = coarse.phi(i,1,1,g);
-              
-              end              
-          end
-          %coarse_flux_old = reshape(coarse.phi,total_mesh_coarse,1);
-          %coarse_flux_old = coarse_flux_old / sum(self.coarseF * coarse_flux_old);
+          coarse_flux_old = coarse.phi;
           %Initial Guess:
           format long
           k2 = 1;
@@ -216,6 +285,10 @@ classdef Solver
               k2 = kold2 * sum(phi2)/sum(phiold);
               phi2 = phi2 / sum(self.coarseF * phi2);
               phiold = phi2;
+          end
+          self.k = k2;
+          if (self.verifyCoarse == 1)
+              self.checkCoarseBalance(coarse);
           end
           
           %CMFD completed. Remap back onto fine mesh

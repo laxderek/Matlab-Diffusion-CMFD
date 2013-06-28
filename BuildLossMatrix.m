@@ -105,8 +105,8 @@ function [M mesh] = BuildLossMatrix(mesh, dim, CMFD, fine, damping)
                    if (dim < 2)
                        j3 = j;
                    end
-                   dhatnew = -(fine.Jsurf(i3,j3,k3,g,surf) - side *  mesh.dtilde(i,j,k,g,surf) * ...
-                       mesh.phi(i,j,k,g)) / mesh.phi(i,j,k,g);
+                   dhatnew = -(fine.Jsurf(i3,j3,k3,g,surf) - side * mesh.dtilde(i,j,k,g,surf) * ...
+                       mesh.phi(indexToMat(i,j,k,g,info))) / mesh.phi(indexToMat(i,j,k,g,info));
                    dhatold = mesh.dhat(i,j,k,g,surf);
                    
                    dhat = dhatnew * damping + (1 - damping) * dhatold;
@@ -140,9 +140,9 @@ function [M mesh] = BuildLossMatrix(mesh, dim, CMFD, fine, damping)
                    current = fine.Jsurf(i3,j3,k3,g,surf);
                    if (surf == 1 || surf == 2)                  
                    dhatnew = -(current + side * mesh.dtilde(i,j,k,g,surf) * ...
-                       (-mesh.phi(i,j,k,g) + mesh.phi(i2,j2,k2,g))...
-                       )/ (mesh.phi(i,j,k,g) + ...
-                       mesh.phi(i2,j2,k2,g));
+                       (-mesh.phi(indexToMat(i,j,k,g,info)) + mesh.phi(indexToMat(i2,j2,k2,g,info)))...
+                       )/ (mesh.phi(indexToMat(i,j,k,g,info)) + ...
+                       mesh.phi(indexToMat(i2,j2,k2,g,info)));
                    dhatold = mesh.dhat(i,j,k,g,surf);
                    
                    dhat = dhatnew * damping + (1 - damping) * dhatold;

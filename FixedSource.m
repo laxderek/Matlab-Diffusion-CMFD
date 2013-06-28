@@ -23,7 +23,7 @@ solver.innerprintlevel = 0;
 solver.verify = 0;
 solver.verifyCoarse = 0;
 solver.figures = 1;
-solver.fixedSource = 0;
+solver.fixedSource = 1;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%% Material Defintions %%%%%%%%%%%%%%%%%%%%%%
@@ -51,24 +51,6 @@ mat.sigA = sigA;
 mat.sigS = sigS;
 mat.nusigF = nusigF;
 
-%%% Second Material
-mat2 = Material();
-D = [1.0 .1];
-sigA = [0.5 .5];
-nusigF = [0 0.0];
-chi = [0.0 0.0];
-sigS = [[0.5 0.1]
-        [0.01 4.5]]; 
-tot = [1.1 5.01];
-mat2.D = D;
-mat2.nusigF = nusigF;
-mat2.chi = chi;
-mat2.sigT = tot;
-mat2.sigA = sigA;
-mat2.sigS = sigS;
-mat2.nusigF = nusigF;
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%Geometry Definitions%%%%%%%%%%%%%%%%%%
@@ -85,13 +67,8 @@ x_len = 10; y_len = 1; z_len = 1;
 solver.BC = [1 1 1];
 mesh = Mesh(x_len,y_len,z_len,solver.ng);
 mesh = mesh.setNumMats(1);
-mesh.mats = [mat mat2];
+mesh.mats = [mat];
 mesh = mesh.setAllMat(1,mat);
-mesh = mesh.setMatAtLoc(1,1,1,2,mat2);
-mesh = mesh.setMatAtLoc(2,1,1,2,mat2);
-mesh = mesh.setMatAtLoc(3,1,1,2,mat2);
-mesh = mesh.setMatAtLoc(4,1,1,2,mat2);
-mesh = mesh.setMatAtLoc(5,1,1,2,mat2);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 solver.mesh = mesh;
