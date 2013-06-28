@@ -79,8 +79,7 @@ classdef Solver
                 break;
               end
               kold = self.k;
-              b = self.F*phiold/kold;
-              self.phi = self.M\b;
+              self.phi = self.M\sourceVec;
               self.k = kold * sum(self.phi)/sum(phiold);
               self.phi = self.phi / sum(self.F * self.phi);
               if (self.CMFD == 1 && mod(i,self.iterationsBetweenCMFD) == 0) 
@@ -276,7 +275,9 @@ classdef Solver
               end
               if (abs(k2-kold2) < self.convergence_coarse)
                   text = strcat('CMFD Converged in  ',num2str(iters_coarse-1),' Iterations. k:  ',num2str(k2),12);
-                  disp(text);
+                  if (self.innerprintlevel == 1)
+                      disp(text);
+                  end
                   break;
               end
               kold2 = k2;

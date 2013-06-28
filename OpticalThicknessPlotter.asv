@@ -42,15 +42,14 @@ for i = 1:num
     %%% First Material
     mat = Material();
     sigA = [0.05 .5*sigMult(i)];
-    nusigF = [0.02 0.48];
-    chi = [1.0 0.0];
+    nusigF = [[0.02 00
+              [0.48 0.0]];
     sigS = [[0.05 0.1]
             [0.0 0.5*sigMult(i)]]; 
     tot = [.2 1*sigMult(i)];
     D = 1 / 3 * tot;
     mat.D = D;
     mat.nusigF = nusigF;
-    mat.chi = chi;
     mat.sigT = tot;
     mat.sigA = sigA;
     mat.sigS = sigS;

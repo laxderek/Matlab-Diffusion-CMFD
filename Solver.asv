@@ -59,7 +59,7 @@ classdef Solver
           self = self.checkParams();
           
           [self.M self.mesh] = BuildLossMatrix(self.mesh, 1, false, 0);
-          s
+          sourceVec = self.source*ones(self.total_mesh,1);
           %Initial Guess:
           format long
           self.k = 1;
@@ -79,8 +79,7 @@ classdef Solver
                 break;
               end
               kold = self.k;
-              b = self.F*phiold/kold;
-              self.phi = self.M\b;
+              self.phi = self.M\source;
               self.k = kold * sum(self.phi)/sum(phiold);
               self.phi = self.phi / sum(self.F * self.phi);
               if (self.CMFD == 1 && mod(i,self.iterationsBetweenCMFD) == 0) 

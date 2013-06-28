@@ -34,7 +34,7 @@ classdef Mesh
         
         %constructor
         function self=Mesh(x,y,z,g) 
-            self.phi = zeros(x,y,z,g);
+            self.phi = zeros(x*y*z*g,1);
             self.Leakage = zeros(x,y,z,g,6);
             self.Jsurf = zeros(x,y,z,g,6);
             self.dtilde = zeros(x,y,z,g,6);
@@ -91,7 +91,7 @@ classdef Mesh
             for i = 1:self.x
                 for j = 1:self.y
                     for k = 1:self.z
-                        self.MAT(i,j,k) = mat;        
+                            self.MAT(i,j,k) = mat;        
                         self.D(i,j,k,:) = material.D;
                         self.sigT(i,j,k,:) = material.sigT;
                         self.sigA(i,j,k,:) = material.sigA;
@@ -169,7 +169,7 @@ classdef Mesh
                 coarse.gridreduce = scale;
                 coarse.albedo = fine.albedo;
                 info = [dim ng fine.x fine.y fine.z];
-                info2 = [dim ng fine.x fine.y fine.z];
+                info2 = [dim ng coarse.x coarse.y coarse.z];
                 %loop over coarse mesh condensing each dimension
                 %(scalex,scaley,scalez)
                 for i = 1:coarse.x
@@ -226,7 +226,7 @@ classdef Mesh
                                 end
                             end
                             for group  = 1:fine.g
-                                    coarse.phi(indexToMat(i,j,k,group,info)) = volWeightedPhi(group) / prod(coarse.dxyz(i,j,k,:));
+                                    coarse.phi(indexToMat(i,j,k,group,info2)) = volWeightedPhi(group) / prod(coarse.dxyz(i,j,k,:));
                                     coarse.D(i,j,k,group) = DiffP(group) ./  totphi(group);
                                     coarse.sigT(i,j,k,group) = sigmaTP(group) ./ totphi(group);
                                     coarse.sigA(i,j,k,group) = sigmaAP(group) ./ totphi(group);
