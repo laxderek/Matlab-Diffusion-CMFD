@@ -87,11 +87,6 @@ mesh = Mesh(x_len,y_len,z_len,solver.ng);
 mesh = mesh.setNumMats(1);
 mesh.mats = [mat mat2];
 mesh = mesh.setAllMat(1,mat);
-%mesh = mesh.setMatAtLoc(1,1,1,2,mat2);
-%mesh = mesh.setMatAtLoc(2,1,1,2,mat2);
-%mesh = mesh.setMatAtLoc(3,1,1,2,mat2);
-%mesh = mesh.setMatAtLoc(4,1,1,2,mat2);
-%mesh = mesh.setMatAtLoc(5,1,1,2,mat2);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 solver.mesh = mesh;
