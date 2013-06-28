@@ -6,9 +6,9 @@ clear
 clc
 close all
 
-max = 5;
+max = 50;
 min = 1;
-step = 0.25;
+step = 10;
 num = (max - min) / step;
 sigMult = linspace(min,max,num);
 opticalThickness = zeros(num,1);
@@ -46,7 +46,7 @@ solver.fixedSource = 0;
     nusigF = [0.02 0.48];
     chi = [1.0 0.0];
     sigS = [[0.05 0.1]
-            [0.0 0.5*sigMult(i)]]; 
+            [0.0 0.5]]; 
     tot = [.2 1*sigMult(i)];
     D = [1.5 0.3];
     mat.D = D;
@@ -91,8 +91,7 @@ end
 
 
 figure;
-plot(opticalThickness,iters,opticalThickness,iters2);
+plot(opticalThickness,iters);
 axis([0 20 0 15]);
 xlabel('Optical Thickness (#mfp)');
 ylabel('Number of Iterations');
-legend('With CMFD','Without CMFD');
